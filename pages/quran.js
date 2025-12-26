@@ -1,75 +1,79 @@
-import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
-export default function SurahPage() {
-  const router = useRouter();
-  const { surah } = router.query;
-
-  const [ayahs, setAyahs] = useState([]);
-  const [info, setInfo] = useState(null);
+export default function QuranPage() {
+  const [surahs, setSurahs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!surah) return;
-
-    Promise.all([
-      fetch(`https://api.alquran.cloud/v1/surah/${surah}`).then(r => r.json()),
-      fetch(`https://api.alquran.cloud/v1/surah/${surah}/ar.alafasy`).then(r => r.json()),
-      fetch(`https://api.alquran.cloud/v1/surah/${surah}/ur.junagarhi`).then(r => r.json()),
-      fetch(`https://api.alquran.cloud/v1/surah/${surah}/en.sahih`).then(r => r.json()),
-    ]).then(([infoRes, ar, ur, en]) => {
-      const combined = ar.data.ayahs.map((a, i) => ({
-        number: a.numberInSurah,
-        ar: a.text,
-        ur: ur.data.ayahs[i].text,
-        en: en.data.ayahs[i].text,
-      }));
-
-      setInfo(infoRes.data);
-      setAyahs(combined);
-      setLoading(false);
-    });
-  }, [surah]);
-
-  if (loading) return <p style={{ padding: 20 }}>Loading Surah...</p>;
+    fetch("https://api.alquran.cloud/v1/surah")
+      .then((res) => res.json())
+      .then((data) => {
+        setSurahs(data.data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
   return (
-    <main style={{ padding: 20 }}>
-      <h1>{info.englishName} ({info.name})</h1>
-      <p style={{ color: "#555" }}>
-        {info.englishNameTranslation} • {info.numberOfAyahs} Ayahs
-      </p>
+    <main style={styles.container}>
+      <h1 style={styles.heading}>📖 Al-Qur’an</h1>
+      <p style={styles.sub}>Complete Quran (114 Surahs)</p>
 
-      {ayahs.map(a => (
-        <div key={a.number} style={styles.card}>
-          <div style={styles.ar}>{a.ar}</div>
-          <div style={styles.ur}>{a.ur}</div>
-          <div style={styles.en}>{a.en}</div>
-        </div>
-      ))}
+      {loading && <p>Loading Quran...</p>}
+
+      <div style={styles.list}>
+        {surahs.map((s) => (
+          <Link
+            key={s.number}
+            href={`/quran/${s.number}`}
+            style={styles.card}
+          >
+            <div>
+              <strong>
+                {s.number}. {s.englishName}
+              </strong>
+              <br />
+              <span style={styles.meta}>
+                {s.name} • {s.numberOfAyahs} Ayahs
+              </span>
+            </div>
+          </Link>
+        ))}
+      </div>
     </main>
   );
 }
 
 const styles = {
+  container: {
+    padding: "20px",
+    fontFamily: "system-ui",
+  },
+  heading: {
+    fontSize: "26px",
+    marginBottom: "5px",
+  },
+  sub: {
+    color: "#555",
+    marginBottom: "20px",
+  },
+  list: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+    gap: "12px",
+  },
   card: {
-    marginBottom: 18,
-    padding: 14,
-    borderRadius: 10,
+    padding: "12px",
+    borderRadius: "10px",
+    border: "1px solid #eee",
     background: "#fff",
+    textDecoration: "none",
+    color: "#000",
     boxShadow: "0 2px 6px rgba(0,0,0,.05)",
   },
-  ar: {
-    fontSize: 24,
-    textAlign: "right",
-    marginBottom: 8,
-  },
-  ur: {
-    fontSize: 15,
-    marginBottom: 6,
-  },
-  en: {
-    fontSize: 14,
-    color: "#555",
+  meta: {
+    fontSize: "13px",
+    color: "#666",
   },
 };
