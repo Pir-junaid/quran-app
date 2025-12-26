@@ -1,105 +1,80 @@
-// save reading progress
-useEffect(() => {
-  localStorage.setItem("lastPage", pageNum);
-}, [pageNum]);
-
-// resume last page if exists
-useEffect(() => {
-  const last = localStorage.getItem("lastPage");
-  if (last && pageNum === 1) {
-    router.replace(`/quran/page/${last}`);
-  }
-}, []);
-
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-
-const AYAH_PER_PAGE = 12;
 
 export default function QuranPage() {
   const router = useRouter();
   const { page } = router.query;
-  const pageNum = parseInt(page || "1");
 
+  const pageNum = Number(page);
   const [ayahs, setAyahs] = useState([]);
-  const [surahName, setSurahName] = useState("");
-  const [loading, setLoading] = useState(true);
 
+  // fetch Quran page
   useEffect(() => {
-    async function loadPage() {
-      setLoading(true);
+    if (!pageNum) return;
 
-      const res = await fetch(
-        "https://api.alquran.cloud/v1/quran/ar.alafasy"
-      );
-      const data = await res.json();
+    fetch(`https://api.alquran.cloud/v1/page/${pageNum}/quran-uthmani`)
+      .then(res => res.json())
+      .then(data => setAyahs(data.data.ayahs));
 
-      const allAyahs = [];
-      data.data.surahs.forEach((s) => {
-        s.ayahs.forEach((a) => {
-          allAyahs.push({
-            text: a.text,
-            surah: s.name,
-            number: a.numberInSurah,
-            surahNumber: s.number,
-          });
-        });
-      });
-
-      const start = (pageNum - 1) * AYAH_PER_PAGE;
-      const pageAyahs = allAyahs.slice(start, start + AYAH_PER_PAGE);
-
-      setSurahName(pageAyahs[0]?.surah || "");
-      setAyahs(pageAyahs);
-      setLoading(false);
-    }
-
-    loadPage();
+    // save progress
+    localStorage.setItem("lastPage", pageNum);
   }, [pageNum]);
 
-  // Swipe handling
-  let startX = 0;
-  function onTouchStart(e) {
-    startX = e.touches[0].clientX;
-  }
-  function onTouchEnd(e) {
-    const endX = e.changedTouches[0].clientX;
-    if (startX - endX > 50) router.push(`/quran/page/${pageNum + 1}`);
-    if (endX - startX > 50 && pageNum > 1)
-      router.push(`/quran/page/${pageNum - 1}`);
+  // resume last page
+  useEffect(() => {
+    if (!page) {
+      const last = localStorage.getItem("lastPage") || 1;
+      router.replace(`/quran/page/${last}`);
+    }
+  }, [page]);
+
+  function nextPage() {
+    router.push(`/quran/page/${pageNum + 1}`);
   }
 
-  if (loading) return <p className="loading">Loading...</p>;
+  function prevPage() {
+    if (pageNum > 1) {
+      router.push(`/quran/page/${pageNum - 1}`);
+    }
+  }
 
   return (
-    <main
-      className="quran-page"
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-    >
-      {/* Surah Header */}
-      <div className="surah-header">
-        <h2>{surahName}</h2>
-      </div>
-
-      {/* Bismillah */}
-      {ayahs[0]?.surahNumber !== 1 && (
-        <div className="bismillah">
-          بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-        </div>
-      )}
-
-      {/* Quran Text */}
-      <div className="quran-text">
-        {ayahs.map((a, i) => (
-          <span key={i}>
-            {a.text}
-            <span className="ayah-end"> ۝</span>{" "}
+    <main style={styles.container}>
+      <div style={styles.page}>
+        {ayahs.map(a => (
+          <span key={a.number} style={styles.ayah}>
+            {a.text} ۝
           </span>
         ))}
       </div>
 
-      <div className="page-hint">Swipe left / right</div>
+      <div style={styles.nav}>
+        <button onClick={prevPage}>⬅</button>
+        <span>Page {pageNum}</span>
+        <button onClick={nextPage}>➡</button>
+      </div>
     </main>
   );
-            }
+}
+
+const styles = {
+  container: {
+    background: "#f8f3e8",
+    minHeight: "100vh",
+    padding: 20
+  },
+  page: {
+    fontSize: 22,
+    lineHeight: 2,
+    direction: "rtl",
+    textAlign: "justify"
+  },
+  ayah: {
+    marginRight: 6
+  },
+  nav: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginTop: 20
+  }
+};
