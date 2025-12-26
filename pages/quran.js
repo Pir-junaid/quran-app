@@ -1,50 +1,79 @@
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export default function QuranPage() {
-  const [ayahs, setAyahs] = useState([]);
+  const [surahs, setSurahs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Load Surah Al-Fatiha (example – later we’ll add full navigation)
   useEffect(() => {
-    async function loadQuran() {
-      try {
-        const res = await fetch(
-          "https://api.alquran.cloud/v1/surah/1/ar"
-        );
-        const data = await res.json();
-        setAyahs(data.data.ayahs);
-      } catch (err) {
-        console.error(err);
-      } finally {
+    fetch("https://api.alquran.cloud/v1/surah")
+      .then((res) => res.json())
+      .then((data) => {
+        setSurahs(data.data);
         setLoading(false);
-      }
-    }
-
-    loadQuran();
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   return (
-    <div className="container">
-      <h2>📖 القرآن الكريم</h2>
-      <p>صرف عربی قرآن (تلاوت)</p>
+    <main style={styles.container}>
+      <h1 style={styles.heading}>📖 Al-Qur’an</h1>
+      <p style={styles.sub}>Complete Quran (114 Surahs)</p>
 
       {loading && <p>Loading Quran...</p>}
 
-      {!loading &&
-        ayahs.map((a) => (
-          <div key={a.number} className="card" style={{ marginBottom: "14px" }}>
-            <div className="arabic">{a.text}</div>
-            <div style={{ fontSize: "13px", color: "#6b7280" }}>
-              آیت {a.numberInSurah}
+      <div style={styles.list}>
+        {surahs.map((s) => (
+          <Link
+            key={s.number}
+            href={`/quran/${s.number}`}
+            style={styles.card}
+          >
+            <div>
+              <strong>
+                {s.number}. {s.englishName}
+              </strong>
+              <br />
+              <span style={styles.meta}>
+                {s.name} • {s.numberOfAyahs} Ayahs
+              </span>
             </div>
-          </div>
+          </Link>
         ))}
-
-      <footer>
-        <p>
-          یہ حصہ صرف تلاوت کے لیے ہے — ترجمہ و تفسیر اسٹڈی سیکشن میں
-        </p>
-      </footer>
-    </div>
+      </div>
+    </main>
   );
-        }
+}
+
+const styles = {
+  container: {
+    padding: "20px",
+    fontFamily: "system-ui",
+  },
+  heading: {
+    fontSize: "26px",
+    marginBottom: "5px",
+  },
+  sub: {
+    color: "#555",
+    marginBottom: "20px",
+  },
+  list: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+    gap: "12px",
+  },
+  card: {
+    padding: "12px",
+    borderRadius: "10px",
+    border: "1px solid #eee",
+    background: "#fff",
+    textDecoration: "none",
+    color: "#000",
+    boxShadow: "0 2px 6px rgba(0,0,0,.05)",
+  },
+  meta: {
+    fontSize: "13px",
+    color: "#666",
+  },
+};
