@@ -9,7 +9,7 @@ export default function Home() {
       </p>
 
       <div style={styles.grid}>
-        <Link href="/quran" style={styles.card}>
+        <Link href="/quran/page/1" style={styles.card}>
           <h3>📘 Quran</h3>
           <p>Arabic Quran with Tajweed</p>
         </Link>
