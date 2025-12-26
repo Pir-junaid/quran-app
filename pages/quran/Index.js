@@ -1,81 +1,104 @@
 import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
+import Link from "next/link";
 
-export default function SurahList() {
+export default function QuranSurahList() {
   const [surahs, setSurahs] = useState([]);
-  const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("https://api.alquran.cloud/v1/surah")
-      .then(res => res.json())
-      .then(data => setSurahs(data.data));
+      .then((res) => res.json())
+      .then((data) => {
+        setSurahs(data.data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
-  function openSurah(surah) {
-    // save selected surah
-    localStorage.setItem("selectedSurah", surah.number);
-
-    // start reading from page 1 (or later mapping)
-    router.push("/quran/page/1");
+  if (loading) {
+    return (
+      <div style={styles.loading}>
+        <p>Loading Surahs...</p>
+      </div>
+    );
   }
 
   return (
-    <main style={styles.container}>
-      <h1 style={styles.title}>📖 القرآن الكريم</h1>
-      <p style={styles.sub}>Surah select karein</p>
+    <div style={styles.container}>
+      <h1 style={styles.title}>📖 Al-Quran</h1>
+      <p style={styles.subtitle}>Select a Surah to read</p>
 
       <div style={styles.list}>
-        {surahs.map(s => (
-          <div
-            key={s.number}
+        {surahs.map((surah) => (
+          <Link
+            key={surah.number}
+            href={`/quran/surah/${surah.number}`}
             style={styles.card}
-            onClick={() => openSurah(s)}
           >
-            <div style={styles.ar}>{s.name}</div>
-            <div style={styles.en}>
-              {s.number}. {s.englishName}
+            <div>
+              <h3 style={styles.surahName}>
+                {surah.number}. {surah.englishName}
+              </h3>
+              <p style={styles.arabic}>{surah.name}</p>
+              <p style={styles.info}>
+                {surah.numberOfAyahs} Ayahs • {surah.revelationType}
+              </p>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
-    </main>
+    </div>
   );
 }
 
 const styles = {
   container: {
-    padding: 20,
-    background: "#f3efe6",
-    minHeight: "100vh"
+    minHeight: "100vh",
+    padding: "20px",
+    background: "#f7f3eb", // parchment look
+    fontFamily: "system-ui",
   },
   title: {
     textAlign: "center",
-    fontSize: 26
+    fontSize: "28px",
+    marginBottom: "5px",
   },
-  sub: {
+  subtitle: {
     textAlign: "center",
-    marginBottom: 20,
-    color: "#555"
+    marginBottom: "20px",
+    color: "#555",
   },
   list: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(140px,1fr))",
-    gap: 12
+    gridTemplateColumns: "1fr",
+    gap: "12px",
   },
   card: {
+    textDecoration: "none",
     background: "#fff",
-    padding: 12,
-    borderRadius: 10,
-    cursor: "pointer",
-    textAlign: "center",
-    boxShadow: "0 2px 6px rgba(0,0,0,.05)"
+    padding: "14px",
+    borderRadius: "12px",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+    color: "#000",
   },
-  ar: {
-    fontSize: 20,
-    marginBottom: 6
+  surahName: {
+    margin: 0,
+    fontSize: "16px",
   },
-  en: {
-    fontSize: 13,
-    color: "#666"
-  }
+  arabic: {
+    fontSize: "20px",
+    textAlign: "right",
+    fontFamily: "serif",
+  },
+  info: {
+    fontSize: "12px",
+    color: "#666",
+  },
+  loading: {
+    minHeight: "100vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#f7f3eb",
+  },
 };
